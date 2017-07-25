@@ -1,0 +1,41 @@
+	AREA question01, CODE, READONLY
+	ENTRY
+	ADR r0,UPC
+	MOV r1,#0 		;initialize loop counter to 0
+	MOV r2,#1		;set a flag to detect even/odd loop iteration
+					;'0' flag = even
+					;'1' flag = odd
+sumDigits LDRB r5,[r0,r1] 
+	CMP r2,#0    ;If even
+	   ADDEQ r4,r4,r5       ;Update sum of even numbers
+	   ADDEQ r2,r2,#1		;Update flag
+	   ADDNE r3,r3,r5	
+	   SUBNE r2,r2,#1
+	   ADD r1,r1,#1		;increment counter
+       CMP r1,#11
+	   BEQ exit
+	   B sumDigits
+	
+exit   MOV r5,#3
+	   MUL r3,r5,r3	;Multiply sum of odd registers by 3
+	   ADD r4,r4,r1 ;Add sum of odd numbered digits to sum of even numbered digits
+	   SUB r4,r4,#1 ;Subtract 1 from the total
+	
+	;Divide by 10 and store remainder
+	MOV r5,#10		;Comparison value
+div SUB r4,r4,#10
+	CMP r4,r5
+	BGT div
+	
+	RSB r4,r4,#9	;Subtract remainder from 10 from 9
+	
+	;Store the check digit and compare
+	LDRB r5,[r0,#11]
+	SUB r5,r5,0x30	;Convert to decimal
+	CMP r4,r5
+	MOVEQ r0,#1		;IF equal, THEN store 1 in r0
+	BEQ hasReturned
+	MOV r0,#2		;IF not equal, store 2 in r0
+hasReturned B hasReturned
+UPC DCB "013800150738" ;upc
+	END

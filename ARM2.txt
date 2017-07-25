@@ -1,0 +1,28 @@
+	AREA question1, CODE, READWRITE
+	ENTRY
+	LDR r1,=STRING1	;Can hold up to 32 bits
+	LDR r2,=STRING2
+	LDR r3,=STRING3
+
+	MOV r5,0x00	;to store null terminator
+	
+storeString1 LDRB r4,[r1],#1 
+			 CMP r4,r5			;Is stored byte the null terminator?
+			 BEQ appendString2	;And Branch
+			 STRB r4,[r3],#1		;Append to r3
+		     BNE storeString1       ;Append next character!
+
+appendString2 LDRB r4,[r2],#1
+			  CMP r4,r5			;Is stored byte the null terminator?
+			  STRBEQ r5,[r3]		;Append the result string with the null terminator
+			  BEQ loop			;And end
+			  STRB r4,[r3]		;Append to r3
+			  BNE appendString2
+			
+loop B loop
+STRING1 DCB "This is a test string1"	;String1
+EoS1	DCB 0x00						;end of string1
+STRING2 DCB "This is a test string2"	;String 
+EOS2	DCB 0x00						;end of string2
+STRING3	space 0xFF						;space for result string
+	END

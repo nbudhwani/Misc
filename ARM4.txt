@@ -1,0 +1,82 @@
+	AREA question02, CODE, READONLY
+	ENTRY
+	ADR r1,STRING	;store address for forward string comparison
+	MOV r2, #0	 ;counter for length in r3
+	ADR r3,STRING	;store address for backward string comparison
+	
+;Subroutine: find the length of the string
+findLength LDRB r8,[r1,r2]		;Temp storage of string byte in r8
+		   CMP r8,0x00 			;IF at end of string
+		   SUBEQ r2,r2,#1 		;THEN decrement length to equal offset of last char in string
+           LDRBEQ r4,[r1]		;Load first char in temp register
+		   MOV r9,#0			;Initialize forward offset to be 1
+		   BEQ findValidChar	;AND branch
+		   ADD r2,r2,#1 		;ELSE increment the length
+		   B findLength			;repeat
+		   
+		   ;backward string comparison address stored in r3
+		   ;temp byte storage in r4
+		   ;r5 is the flag register that says not valid char
+		   
+		   ;r8 will check if checkASCII is checking front (1) or back (2) char
+			
+findValidChar  MOV r8,#1
+	       B checkASCII	    ;conduct checkASCII subroutine on front character				
+backToMain1    CMP r5,#1			;IF flag r5=1, 
+			   ADDEQ r9,r9,#1
+			   LDRBEQ r4,[r1,r9]		;THEN Load new byte
+			   BEQ findValidChar   		;AND loop
+			   
+			   LDRB r4,[r3,r2]	;Load last char in temp register	   
+findValidChar2 MOV r8,#2
+			   B checkASCII     ;conduct checkASCII subroutine on back character ASCII range.
+backtoMain2	   CMP r5,#1	    ;IF flag r5=1
+			   SUBEQ r2,r2,#1	;THEN decrement backward offset and loop
+			   LDRBEQ r4,[r3,r2] ;AND load new byte
+			   BEQ findValidChar2 ;AND loop
+			   
+			   LDRB r6,[r1,r9]	;front character
+			   LDRB r7,[r3,r2]	;back character
+			   CMP r6,r7	;compare characters	
+			   SUB r10,r6,r7
+			   TEQ r10,#0		;take absolute value of difference
+			   RSBMI r10,r10,#0
+			   CMP r10,#0			;IF same character
+			   BEQ compareOffsets	;continue
+			   CMP r10,0x20			;IF one is a capital, and the other is lowercase
+			   BEQ compareOffsets	;continue
+			   B returnFalse
+
+compareOffsets CMP r9,r2			;compare forward offset and backward offset
+			   BGT returnFalse		 ;if backoffset < front offset return false
+			   BEQ returnTrue 	    ;if backoffset = front offset return true and exit loop
+               SUB r2,r2,#1	          ;else decrement back offset
+			   ADD r9,r9,#1
+			   LDRB r4,[r1,r9]			;and increment front offset, also storing the character in r4
+			   B findValidChar 
+			   
+;checkASCII subroutine: ensure register content is in ASCII range 41-5A or 61-7A. If not store 1 in flag register r5
+checkASCII MOV r5,#0 ;initialize flag register to 0
+		   CMP r4,0x41
+		   MOVLT r5,#1	;flap
+		   BLT theEnd
+		   CMP r4,0x7A
+		   MOVGT r5,#1	;flag
+		   BGT theEnd
+		   CMP r4,0x5A
+		   BLT theEnd
+		   CMPGT r4,0x61
+		   MOVLT r5,#1   ;flag
+theEnd	   CMP r8,#1
+		   BEQ backToMain1
+		   B backtoMain2
+		   
+returnTrue	MOV r0,#1			;store 1 in r0
+			B loop
+			
+returnFalse	MOV r0,#2			;store 2 in r0
+			B loop
+loop B loop
+STRING DCB "He lived as a devil, eh?"
+EoS DCB 0x00	;end of string
+	END
